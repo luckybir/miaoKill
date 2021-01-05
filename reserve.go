@@ -29,7 +29,7 @@ func getReserveURL() {
 
 	query := req.URL.Query()
 	query.Add("callback", "fetchJSON")
-	query.Add("sku", "100012043978")
+	query.Add("sku", loginInfo.skuID)
 	query.Add("_", string(time.Now().Unix()*1000))
 	req.URL.RawQuery = query.Encode()
 

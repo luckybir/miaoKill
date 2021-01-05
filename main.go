@@ -1,22 +1,24 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/zellyn/kooky/allbrowsers" // register cookie store finders!
 	"go.uber.org/zap"
+	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
 )
 
 type QRCodeLoginInfo struct {
-	client    *http.Client
-	userAgent string
-	cookie    []*http.Cookie
-	ticket    string
-	isLogin   bool
-	reserveURL string
-	secKillURL string
+	client           *http.Client
+	userAgent        string
+	cookie           []*http.Cookie
+	ticket           string
+	isLogin          bool
+	reserveURL       string
+	secKillURL       string
+	serverTimeOffset int64
+	skuID string
 }
 
 var Sugar *zap.SugaredLogger
@@ -39,6 +41,11 @@ func init() {
 	jar, _ := cookiejar.New(nil)
 	loginInfo.client.Jar = jar
 
+	loginInfo.skuID = "100012043978"
+
+	getJdTimeOffset()
+
+	rand.Seed(time.Now().Unix())
 
 }
 
@@ -46,13 +53,12 @@ func init() {
 
 func main() {
 	//tttt()
-	reserve()
+	//reserve()
 	secondKill()
 }
 
 func tttt() {
-	fmt.Println(time.Now().Unix() * 1000)
+
+
 	Sugar.Fatal("return")
 }
-
-
