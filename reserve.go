@@ -1,10 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/transform"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -21,7 +17,7 @@ func reserve() {
 }
 
 func getReserveURL() {
-	url := `https://yushou.jd.com/youshouinfo.action?`
+	url := `https://yushou.jd.com/youshouinfo.action`
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -95,35 +91,17 @@ func makeReserve() {
 		Sugar.Fatal(err)
 	}
 
-	for _, cookie := range cookies {
-		req.AddCookie(cookie)
-	}
-
 	query := req.URL.Query()
 	query.Add("shopId", "1000085463")
 	query.Add("isPlusLimit", "1")
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := loginInfo.client.Do(req)
 	if err != nil {
 		Sugar.Fatal(err)
 	}
 
 	defer resp.Body.Close()
 
-	printGBKBody(resp.Body)
-	Sugar.Info(resp.StatusCode)
-	Sugar.Info("game over")
-}
-
-func printGBKBody(respGBKbody io.ReadCloser) {
-	respBodyUTF8 := transform.NewReader(respGBKbody, simplifiedchinese.GBK.NewDecoder())
-	body, err := ioutil.ReadAll(respBodyUTF8)
-	if err != nil {
-		Sugar.Fatal(err)
-	}
-
-	fmt.Println(string(body))
-
-
+	Sugar.Info("reserve successful")
 }

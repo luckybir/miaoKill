@@ -1,17 +1,21 @@
 package main
 
 import (
-	"bytes"
+	"fmt"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/transform"
+	"io"
 	"io/ioutil"
 )
 
-func GbkToUtf8(str []byte) (b []byte, err error) {
-	r := transform.NewReader(bytes.NewReader(str), simplifiedchinese.GBK.NewDecoder())
-	b, err = ioutil.ReadAll(r)
+func printGBKBody(respGBKbody io.ReadCloser) {
+	respBodyUTF8 := transform.NewReader(respGBKbody, simplifiedchinese.GBK.NewDecoder())
+	body, err := ioutil.ReadAll(respBodyUTF8)
 	if err != nil {
-		return
+		Sugar.Fatal(err)
 	}
-	return
+
+	fmt.Println(string(body))
+
+
 }

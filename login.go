@@ -11,6 +11,41 @@ import (
 	"time"
 )
 
+
+
+func checkLogin() {
+
+	getLoginStatus()
+
+	if loginInfo.isLogin == false {
+		getLoginPage()
+		getLoginQRCode()
+
+		for i := 0; i < 10; i++ {
+			time.Sleep(5 * time.Second)
+
+			getQRCodeTicket()
+			if loginInfo.ticket != "" {
+				break
+			}
+		}
+
+		if loginInfo.ticket == "" {
+			Sugar.Fatal("fail to get login token")
+		}
+
+		validateQRCodeTicket()
+	}
+
+	getLoginStatus()
+	if loginInfo.isLogin {
+		Sugar.Info("login success")
+	} else {
+		Sugar.Fatal("login failure")
+	}
+
+}
+
 func getLoginStatus() {
 	url := "https://order.jd.com/center/list.action"
 
@@ -44,37 +79,6 @@ func getLoginStatus() {
 	//
 	//fmt.Printf("cookie: %+v\n",req.Cookies())
 	//fmt.Printf("cookie2:%+v\n",loginInfo.client.Jar)
-
-}
-
-func checkLogin() {
-
-	getLoginStatus()
-
-	if loginInfo.isLogin == false {
-		getLoginPage()
-		getLoginQRCode()
-
-		for i := 0; i < 10; i++ {
-			getQRCodeTicket()
-			if loginInfo.ticket != "" {
-				break
-			}
-		}
-
-		if loginInfo.ticket == "" {
-			Sugar.Fatal("fail to get login token")
-		}
-
-		validateQRCodeTicket()
-	}
-
-	getLoginStatus()
-	if loginInfo.isLogin {
-		Sugar.Info("login success")
-	} else {
-		Sugar.Fatal("login failure")
-	}
 
 }
 
@@ -196,10 +200,6 @@ func getQRCodeTicket() {
 			}
 
 		}
-	}
-
-	if loginInfo.ticket == "" {
-		time.Sleep(5 * time.Second)
 	}
 
 }

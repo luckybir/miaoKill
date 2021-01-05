@@ -16,6 +16,7 @@ type QRCodeLoginInfo struct {
 	ticket    string
 	isLogin   bool
 	reserveURL string
+	secKillURL string
 }
 
 var Sugar *zap.SugaredLogger
@@ -37,6 +38,8 @@ func init() {
 
 	jar, _ := cookiejar.New(nil)
 	loginInfo.client.Jar = jar
+
+
 }
 
 // https://github.com/huanghyw/jd_seckill/tree/master
@@ -44,6 +47,7 @@ func init() {
 func main() {
 	//tttt()
 	reserve()
+	secondKill()
 }
 
 func tttt() {
