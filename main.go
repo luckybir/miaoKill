@@ -3,49 +3,57 @@ package main
 import (
 	_ "github.com/zellyn/kooky/allbrowsers" // register cookie store finders!
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
 	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"time"
 )
 
-type QRCodeLoginInfo struct {
-	client           *http.Client
-	userAgent        string
-	cookie           []*http.Cookie
-	ticket           string
-	isLogin          bool
-	reserveURL       string
-	secKillURL       string
-	serverTimeOffset int64
-	skuID string
+type jdSecondKillInfo struct {
+	basic struct {
+		client           *http.Client
+		userAgent        string
+		serverTimeOffset int64
+		skuID            string
+	}
+
+	login struct {
+		ticket  string
+		isLogin bool
+		token   string
+	}
+
+	reserver struct {
+		URL string
+	}
+
+	secKill struct {
+		URL string
+	}
+}
+
+type Config struct {
+	Eid       string `yaml:"eid"`
+	Fp        string `yaml:"fp"`
+	SkuID     string `yaml:"sku_id"`
+	UserAgent string `yaml:"user_agent"`
 }
 
 var Sugar *zap.SugaredLogger
-var cookies []*http.Cookie
 
-var loginInfo QRCodeLoginInfo
+var secKillInfo jdSecondKillInfo
 
 func init() {
 	Sugar = zap.NewExample().Sugar()
 	defer Sugar.Sync()
 
-	loginInfo.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36"
-
-	loginInfo.client = &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-	}
-
-	jar, _ := cookiejar.New(nil)
-	loginInfo.client.Jar = jar
-
-	loginInfo.skuID = "100012043978"
+	initsecKillInfo()
 
 	getJdTimeOffset()
 
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixNano())
 
 }
 
@@ -53,12 +61,38 @@ func init() {
 
 func main() {
 	//tttt()
-	//reserve()
+	reserve()
 	secondKill()
 }
 
 func tttt() {
-
-
 	Sugar.Fatal("return")
+}
+
+func initsecKillInfo() {
+
+	configText, err := ioutil.ReadFile("./config.yaml")
+	if err != nil {
+		Sugar.Fatal(err)
+	}
+
+	config := Config{}
+
+	err = yaml.Unmarshal(configText, &config)
+	if err != nil {
+		Sugar.Fatal(err)
+	}
+
+	secKillInfo.basic.userAgent = config.UserAgent
+
+	// collect cookies from response
+	jar, _ := cookiejar.New(nil)
+	secKillInfo.basic.client = &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Jar: jar,
+	}
+
+	secKillInfo.basic.skuID = config.SkuID
 }

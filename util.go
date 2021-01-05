@@ -38,17 +38,18 @@ func getJdTimeOffset(){
 	localTime := time.Now().Unix() * 1000
 	serverTime := gjson.GetBytes(body,"serverTime").Int()
 
-	loginInfo.serverTimeOffset = serverTime - localTime
+	secKillInfo.basic.serverTimeOffset = serverTime - localTime
 
-	Sugar.Infof("本地时间与京东服务器时间误差为%v毫秒",loginInfo.serverTimeOffset)
+	Sugar.Infof("本地时间与京东服务器时间误差为%v毫秒",secKillInfo.basic.serverTimeOffset)
 }
 
 func waitRandomTime(){
-	r:= rand.Int63n(300) + 100
+	r:= rand.Intn(300) + 100
 
 	time.Sleep(time.Duration(r) * time.Microsecond)
 }
 
-func randomInt(min int64 ,max int64)int64{
-	return rand.Int63n(max - min) + min
+func randomInt(min int ,max int)int{
+
+	return rand.Intn(max - min) + min
 }

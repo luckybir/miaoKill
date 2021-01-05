@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"github.com/tidwall/gjson"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -40,8 +38,8 @@ func waitSecKillStart() {
 	for {
 		// 本地时间减去与京东的时间差，能够将时间误差提升到0.1秒附近
 		// 具体精度依赖获取京东服务器时间的网络时间损耗
-		if time.Now().Unix()*1000+loginInfo.serverTimeOffset > t.Unix()*1000 {
-			Sugar.Info("时间到达，开始执行……")
+		if time.Now().Unix()*1000+secKillInfo.basic.serverTimeOffset > t.Unix()*1000 {
+			Sugar.Info("second kill time arrive……")
 			break
 		} else {
 			time.Sleep(500)
@@ -51,25 +49,22 @@ func waitSecKillStart() {
 }
 
 func getUserName() {
-	url := `https://passport.jd.com/user/petName/getUserInfoForMiniJd.action`
-
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest("GET", "https://passport.jd.com/user/petName/getUserInfoForMiniJd.action", nil)
 	if err != nil {
 		Sugar.Error(err)
 	}
 
-	req.Header.Set("User-Agent", loginInfo.userAgent)
+	req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 	req.Header.Set("Referer", "https://order.jd.com/center/list.action")
 
 	query := req.URL.Query()
 
-	rand.Seed(time.Now().Unix())
-	callback := "jQuery" + strconv.Itoa(rand.Intn(8999998)+1000000)
+	callback := "jQuery" + strconv.Itoa(randomInt(1000000, 9999999))
 	query.Add("callback", callback)
 	query.Add("_", string(time.Now().Unix()*1000))
 	req.URL.RawQuery = query.Encode()
 
-	resp, err := loginInfo.client.Do(req)
+	resp, err := secKillInfo.basic.client.Do(req)
 	if err != nil {
 		Sugar.Error(err)
 	}
@@ -80,7 +75,7 @@ func getUserName() {
 		Sugar.Error(err)
 	}
 
-	r := regexp.MustCompile(`"nickName":"(.*)",`)
+	r := regexp.MustCompile(`"nickName":"([^"]*)",`)
 	if r.Match(body) {
 		Sugar.Infof("welcome %v", r.FindStringSubmatch(string(body))[1])
 	}
@@ -120,51 +115,47 @@ func getSecKillURL() {
 	//else:
 	//logger.info("抢购链接获取失败，稍后自动重试")
 	//wait_some_time()
-	Sugar.Info("获取抢购URL")
+	Sugar.Info("get second kill URL")
 
 	var routerURL string
 
-	for i := 0; i < 10; i++ {
-		url := `https://itemko.jd.com/itemShowBtn`
+	for i := 0; i < 60; i++ {
 
-		req, err := http.NewRequest("GET", url, nil)
+		req, err := http.NewRequest("GET", "https://itemko.jd.com/itemShowBtn", nil)
 		if err != nil {
 			Sugar.Error(err)
 		}
 
-		req.Header.Set("User-Agent", loginInfo.userAgent)
+		req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 		req.Header.Set("Referer", "https://item.jd.com/100012043978.html")
 
 		query := req.URL.Query()
 
-		rand.Seed(time.Now().Unix())
-		callback := "jQuery" + strconv.Itoa(rand.Intn(8999998)+1000000)
+		callback := "jQuery" + strconv.Itoa(randomInt(1000000, 9999999))
 		query.Add("callback", callback)
-		query.Add("skuId", loginInfo.skuID)
+		query.Add("skuId", secKillInfo.basic.skuID)
 		query.Add("from", "pc")
 		query.Add("_", string(time.Now().Unix()*1000))
 		req.URL.RawQuery = query.Encode()
 
-		resp, err := loginInfo.client.Do(req)
+		resp, err := secKillInfo.basic.client.Do(req)
 		if err != nil {
 			Sugar.Error(err)
 		}
-		defer resp.Body.Close()
 
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			Sugar.Error(err)
 		}
 
+		resp.Body.Close()
+
 		r := regexp.MustCompile(`"url":"([^"]+)"`)
 		if r.Match(body) {
 			routerURL = "https:" + r.FindStringSubmatch(string(body))[1]
-			//Sugar.Infof("seckill URL:%v", loginInfo.secKillURL)
 			break
 		} else {
-			Sugar.Info(string(body))
-			//Sugar.Fatal(string(body))
-			//Sugar.Fatal("get second kill URL failure")
+			Sugar.Infof("fail: %s",body)
 			waitRandomTime()
 		}
 
@@ -175,7 +166,7 @@ func getSecKillURL() {
 		r := regexp.MustCompile(`user_routing\?(.+)`)
 
 		if r.MatchString(routerURL) {
-			loginInfo.secKillURL = "https://marathon.jd.com/captcha.html?" + r.FindStringSubmatch(routerURL)[1]
+			secKillInfo.secKill.URL = "https://marathon.jd.com/captcha.html?" + r.FindStringSubmatch(routerURL)[1]
 		}
 
 		Sugar.Info("get second kill URL successful")
@@ -193,11 +184,11 @@ func navigateSecKillURL() {
 		Sugar.Error(err)
 	}
 
-	req.Header.Set("User-Agent", loginInfo.userAgent)
+	req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 	req.Header.Set("Referer", "https://item.jd.com/100012043978.html")
 	req.Header.Set("Host", "marathon.jd.com")
 
-	resp, err := loginInfo.client.Do(req)
+	resp, err := secKillInfo.basic.client.Do(req)
 	if err != nil {
 		Sugar.Error(err)
 	}
@@ -222,27 +213,27 @@ func requestSecKillCheckoutPage() {
 	}
 
 	query := req.URL.Query()
-	query.Add("skuId", loginInfo.skuID)
+	query.Add("skuId", secKillInfo.basic.skuID)
 	query.Add("num", "2") //		'num': self.seckill_num
 	query.Add("rid", string(time.Now().Unix()))
 	req.URL.RawQuery = query.Encode()
 
-	req.Header.Set("User-Agent", loginInfo.userAgent)
+	req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 	req.Header.Set("Referer", "https://item.jd.com/100012043978.html")
 	req.Header.Set("Host", "marathon.jd.com")
 
-	resp, err := loginInfo.client.Do(req)
+	resp, err := secKillInfo.basic.client.Do(req)
 	if err != nil {
 		Sugar.Error(err)
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		Sugar.Error(err)
-	}
+	//body, err := ioutil.ReadAll(resp.Body)
+	//if err != nil {
+	//	Sugar.Error(err)
+	//}
 
-	Sugar.Info(string(body))
+	//Sugar.Info(string(body))
 }
 
 func submitSecKillOrder() {
@@ -259,20 +250,19 @@ func submitSecKillOrder() {
 		}
 
 		query := req.URL.Query()
-		query.Add("skuId", loginInfo.skuID)
+		query.Add("skuId", secKillInfo.basic.skuID)
 		req.URL.RawQuery = query.Encode()
 
-		req.Header.Set("User-Agent", loginInfo.userAgent)
+		req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 
-		referer := "https://marathon.jd.com/seckill/seckill.action?skuId=" + loginInfo.skuID + "&num=2&rid=" + strconv.FormatInt(time.Now().Unix(), 10)
+		referer := "https://marathon.jd.com/seckill/seckill.action?skuId=" + secKillInfo.basic.skuID + "&num=2&rid=" + strconv.FormatInt(time.Now().Unix(), 10)
 		req.Header.Set("Referer", referer)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		resp, err := loginInfo.client.Do(req)
+		resp, err := secKillInfo.basic.client.Do(req)
 		if err != nil {
 			Sugar.Error(err)
 		}
-		defer resp.Body.Close()
 
 		//	# 返回信息
 		//	# 抢购失败：
@@ -296,8 +286,10 @@ func submitSecKillOrder() {
 			break
 		} else {
 			Sugar.Infof("抢购失败，返回信息:%s", body)
-
+			waitRandomTime()
 		}
+
+		resp.Body.Close()
 	}
 
 }
@@ -312,7 +304,7 @@ func getSecKillOrderData() string {
 	Sugar.Info("获取秒杀初始化信息...")
 
 	data := url.Values{}
-	data.Set("sku", loginInfo.skuID)
+	data.Set("sku", secKillInfo.basic.skuID)
 	data.Set("num", "2")
 	data.Set("isModifyAddress", "false")
 
@@ -322,10 +314,10 @@ func getSecKillOrderData() string {
 		Sugar.Fatal(err)
 	}
 
-	req.Header.Set("User-Agent", loginInfo.userAgent)
+	req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := loginInfo.client.Do(req)
+	resp, err := secKillInfo.basic.client.Do(req)
 	if err != nil {
 		Sugar.Fatal(err)
 	}
@@ -333,53 +325,78 @@ func getSecKillOrderData() string {
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println(string(body))
-
-	Sugar.Fatal(string(body))
-
-	//initInfo := gjson.Get(string(body),loginInfo.skuID)
-
-	//self.seckill_init_info[self.sku_id] = self._get_seckill_init_info()
-	//init_info = self.seckill_init_info.get(self.sku_id)
-
-	//default_address = init_info['addressList'][0]  # 默认地址dict
-	//invoice_info = init_info.get('invoiceInfo', {})  # 默认发票信息dict, 有可能不返回
-	//token = init_info['token']
 
 	data = url.Values{}
-	data.Set("skuId", loginInfo.skuID)
+	data.Set("skuId", secKillInfo.basic.skuID)
 	data.Set("num", "2")
-	data.Set("addressId", "2") //		'addressId': default_address['id'],
+
+	v := gjson.GetBytes(body, "addressList.0.id").String()
+	data.Set("addressId", v)
+
 	data.Set("yuShou", "true")
 	data.Set("isModifyAddress", "false")
-	data.Set("name", "false")          //		'name': default_address['name'],
-	data.Set("provinceId", "false")    //		'provinceId': default_address['provinceId'],
-	data.Set("cityId", "false")        // default_address['cityId'],
-	data.Set("countyId", "false")      //  default_address['countyId'],
-	data.Set("townId", "false")        // default_address['townId'],
-	data.Set("addressDetail", "false") // default_address['addressDetail'],
-	data.Set("mobile", "false")        // default_address['mobile'],
-	data.Set("mobileKey", "false")     // default_address['mobileKey'],
-	data.Set("email", "false")         // default_address.get('email', ''),
+
+	v = gjson.GetBytes(body, "addressList.0.name").String()
+	data.Set("name", v)
+
+	v = gjson.GetBytes(body, "addressList.0.provinceId").String()
+	data.Set("provinceId", "false")
+
+	v = gjson.GetBytes(body, "addressList.0.cityId").String()
+	data.Set("cityId", v)
+
+	v = gjson.GetBytes(body, "addressList.0.countyId").String()
+	data.Set("countyId", v)
+
+	v = gjson.GetBytes(body, "addressList.0.townId").String()
+	data.Set("townId", v)
+
+	v = gjson.GetBytes(body, "addressList.0.addressDetail").String()
+	data.Set("addressDetail", v)
+
+	v = gjson.GetBytes(body, "addressList.0.mobile").String()
+	data.Set("mobile", "false")
+
+	v = gjson.GetBytes(body, "addressList.0.mobileKey").String()
+	data.Set("mobileKey", v)
+
+	v = gjson.GetBytes(body, "addressList.0.email").String()
+	data.Set("email", v)
+
 	data.Set("postCode", "")
-	data.Set("invoiceTitle", "") //invoice_info.get('invoiceTitle', -1),
-	data.Set("invoiceCompanyName", "")
-	data.Set("invoiceContent", "") //invoice_info.get('invoiceContentType', 1),
+
+	v = gjson.GetBytes(body, "invoiceInfo.invoiceTitle").String()
+	data.Set("invoiceTitle", v)
+
+	v = gjson.GetBytes(body, "invoiceInfo.invoiceCompanyName").String()
+	data.Set("invoiceCompanyName", v)
+
+	v = gjson.GetBytes(body, "invoiceInfo.invoiceCompanyName").String()
+	data.Set("invoiceContent", v)
+
 	data.Set("invoiceTaxpayerNO", "")
 	data.Set("invoiceEmail", "")
-	data.Set("invoicePhone", "")    //invoice_info.get('invoicePhone', ''),
-	data.Set("invoicePhoneKey", "") //invoice_info.get('invoicePhoneKey', ''),
-	data.Set("invoice", "true")     // if invoice_info else 'false',
-	data.Set("password", "")        //  global_config.get('account', 'payment_pwd'),
+
+	v = gjson.GetBytes(body, "invoiceInfo.invoicePhone").String()
+	data.Set("invoicePhone", v)
+
+	v = gjson.GetBytes(body, "invoiceInfo.invoicePhoneKey").String()
+	data.Set("invoicePhoneKey", v)
+
+	data.Set("invoice", "false") // if invoice_info else 'false',
+	data.Set("password", "")     //  global_config.get('account', 'payment_pwd'),
 	data.Set("codTimeType", "3")
 	data.Set("paymentType", "4")
 	data.Set("areaCode", "")
 	data.Set("overseas", "0")
 	data.Set("phone", "")
-	data.Set("eid", "")        //global_config.getRaw('config', 'eid'),
-	data.Set("fp", "")         //global_config.getRaw('config', 'fp'),
-	data.Set("token", "token") //token
-	data.Set("pru", "")        // init_info['token']
+	data.Set("eid", "") //global_config.getRaw('config', 'eid'),
+	data.Set("fp", "")  //global_config.getRaw('config', 'fp'),
+
+	v = gjson.GetBytes(body, "token").String()
+	data.Set("token", v)
+
+	data.Set("pru", "")
 
 	return data.Encode()
 
