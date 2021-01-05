@@ -390,8 +390,8 @@ func getSecKillOrderData() string {
 	data.Set("areaCode", "")
 	data.Set("overseas", "0")
 	data.Set("phone", "")
-	data.Set("eid", "") //global_config.getRaw('config', 'eid'),
-	data.Set("fp", "")  //global_config.getRaw('config', 'fp'),
+	data.Set("eid", secKillInfo.basic.eid)
+	data.Set("fp", secKillInfo.basic.fp)
 
 	v = gjson.GetBytes(body, "token").String()
 	data.Set("token", v)

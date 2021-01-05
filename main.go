@@ -11,12 +11,21 @@ import (
 	"time"
 )
 
+type Config struct {
+	Eid       string `yaml:"eid"`
+	Fp        string `yaml:"fp"`
+	SkuID     string `yaml:"sku_id"`
+	UserAgent string `yaml:"user_agent"`
+}
+
 type jdSecondKillInfo struct {
 	basic struct {
 		client           *http.Client
 		userAgent        string
 		serverTimeOffset int64
 		skuID            string
+		eid              string
+		fp               string
 	}
 
 	login struct {
@@ -32,13 +41,6 @@ type jdSecondKillInfo struct {
 	secKill struct {
 		URL string
 	}
-}
-
-type Config struct {
-	Eid       string `yaml:"eid"`
-	Fp        string `yaml:"fp"`
-	SkuID     string `yaml:"sku_id"`
-	UserAgent string `yaml:"user_agent"`
 }
 
 var Sugar *zap.SugaredLogger
@@ -95,4 +97,6 @@ func initsecKillInfo() {
 	}
 
 	secKillInfo.basic.skuID = config.SkuID
+	secKillInfo.basic.eid = config.Eid
+	secKillInfo.basic.fp = config.Fp
 }
