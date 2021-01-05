@@ -1,7 +1,7 @@
 ---
 # eid, fp参数必须填写
 # 随意填写可能导致订单无法提交等问题
-eid: SYJYQ3Z3GTFPSGWVA2CZ7Q2RLPE6UGH5WI2C5UE3FICOCXLWGX6O72T2WCMX7W72F4GQ3KFD7JDPP7CLGETWHBTTAA
-fp: 3f975f7a251669af9afdb9f969f3558b
+eid: abc
+fp: def
 sku_id: 100012043978
 user_agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.88 Safari/537.36
