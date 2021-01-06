@@ -214,7 +214,7 @@ func requestSecKillCheckoutPage() {
 
 	query := req.URL.Query()
 	query.Add("skuId", secKillInfo.basic.skuID)
-	query.Add("num", "2") //		'num': self.seckill_num
+	query.Add("num", secKillInfo.basic.skuQuantity)
 	query.Add("rid", string(time.Now().Unix()))
 	req.URL.RawQuery = query.Encode()
 
@@ -255,7 +255,7 @@ func submitSecKillOrder() {
 
 		req.Header.Set("User-Agent", secKillInfo.basic.userAgent)
 
-		referer := "https://marathon.jd.com/seckill/seckill.action?skuId=" + secKillInfo.basic.skuID + "&num=2&rid=" + strconv.FormatInt(time.Now().Unix(), 10)
+		referer := "https://marathon.jd.com/seckill/seckill.action?skuId=" + secKillInfo.basic.skuID + "&num="+secKillInfo.basic.skuQuantity+"&rid=" + strconv.FormatInt(time.Now().Unix(), 10)
 		req.Header.Set("Referer", referer)
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -276,6 +276,8 @@ func submitSecKillOrder() {
 			Sugar.Error(err)
 		}
 
+		resp.Body.Close()
+
 		success := gjson.GetBytes(body, "success").Bool()
 		if success {
 			orderID := gjson.GetBytes(body, "orderId").String()
@@ -287,9 +289,11 @@ func submitSecKillOrder() {
 		} else {
 			Sugar.Infof("抢购失败，返回信息:%s", body)
 			waitRandomTime()
+
+			break
 		}
 
-		resp.Body.Close()
+
 	}
 
 }

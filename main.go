@@ -15,6 +15,7 @@ type Config struct {
 	Eid       string `yaml:"eid"`
 	Fp        string `yaml:"fp"`
 	SkuID     string `yaml:"sku_id"`
+	SkuQuantity string `yaml:"sku_quantity"`
 	UserAgent string `yaml:"user_agent"`
 }
 
@@ -24,6 +25,7 @@ type jdSecondKillInfo struct {
 		userAgent        string
 		serverTimeOffset int64
 		skuID            string
+		skuQuantity      string
 		eid              string
 		fp               string
 	}
@@ -63,7 +65,7 @@ func init() {
 
 func main() {
 	//tttt()
-	reserve()
+	//reserve()
 	secondKill()
 }
 
@@ -99,4 +101,5 @@ func initsecKillInfo() {
 	secKillInfo.basic.skuID = config.SkuID
 	secKillInfo.basic.eid = config.Eid
 	secKillInfo.basic.fp = config.Fp
+	secKillInfo.basic.skuQuantity = config.SkuQuantity
 }
