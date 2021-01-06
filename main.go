@@ -61,7 +61,7 @@ func init() {
 
 }
 
-// https://github.com/huanghyw/jd_seckill/tree/master
+
 
 func main() {
 	//tttt()
